@@ -1,0 +1,20 @@
+# Build
+backend/target/
+*.class
+*.jar
+*.war
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# Sistema operacional
+Thumbs.db
+.DS_Store
+
+# Variaveis de ambiente
+.env

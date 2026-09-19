@@ -1,0 +1,53 @@
+spring:
+  application:
+    name: pesquisa-satisfacao
+  jackson:
+    default-property-inclusion: always
+
+  # Banco: Supabase (Postgres). O Supabase deste grupo e compartilhado com
+  # outro sistema (bot de Teams) que usa o schema "public" — por isso nossas
+  # tabelas ficam isoladas no schema "pesquisa_satisfacao" (ver
+  # src/main/resources/db/schema-supabase.sql). Exige as variaveis de
+  # ambiente DB_URL, DB_USUARIO e DB_SENHA — sem elas o backend nao sobe.
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USUARIO}
+    password: ${DB_SENHA}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: pesquisa_satisfacao
+
+server:
+  port: 8080
+
+app:
+  jwt:
+    # Em producao use a variavel de ambiente JWT_SEGREDO.
+    segredo: ${JWT_SEGREDO:chave-secreta-do-projeto-de-faculdade-pesquisa-satisfacao-2026}
+    expiracao-ms: 28800000
+  frontend:
+    url: ${FRONTEND_URL:http://localhost:5173}
+  backend:
+    # URL publica desta API, usada para montar os links dos botoes do cartao do Teams.
+    url: ${BACKEND_URL:http://localhost:8080}
+  teams:
+    # URL do webhook do Teams (Conector "Incoming Webhook" ou app "Workflows").
+    # Sem essa variavel, o envio ao Teams e apenas pulado (log de aviso).
+    webhook-url: ${TEAMS_WEBHOOK_URL:}
+  anexos:
+    tamanho-maximo-bytes: 5242880 # 5 MB
+
+logging:
+  level:
+    com.faculdade.pesquisa: INFO
+
+# Precisa cobrir o limite acima (spring.servlet.multipart tem seu proprio limite,
+# separado de app.anexos.tamanho-maximo-bytes) para o upload nao ser cortado antes
+# da validacao de negocio.
+spring.servlet.multipart:
+  max-file-size: 6MB
+  max-request-size: 6MB
