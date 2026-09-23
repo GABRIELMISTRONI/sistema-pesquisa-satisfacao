@@ -37,38 +37,41 @@ public class PesquisaService {
 
     private final AvaliacaoRepository avaliacaoRepository;
     private final ChamadoRepository chamadoRepository;
-    private final TeamsNotificacaoService teamsNotificacaoService;
     private final String urlBaseFrontend;
+    private final long atrasoEnvioMinutos;
 
     public PesquisaService(
             AvaliacaoRepository avaliacaoRepository,
             ChamadoRepository chamadoRepository,
-            TeamsNotificacaoService teamsNotificacaoService,
-            @Value("${app.frontend.url}") String urlBaseFrontend) {
+            @Value("${app.frontend.url}") String urlBaseFrontend,
+            @Value("${app.email.atraso-minutos}") long atrasoEnvioMinutos) {
         this.avaliacaoRepository = avaliacaoRepository;
         this.chamadoRepository = chamadoRepository;
-        this.teamsNotificacaoService = teamsNotificacaoService;
         this.urlBaseFrontend = urlBaseFrontend;
+        this.atrasoEnvioMinutos = atrasoEnvioMinutos;
     }
 
     /**
-     * Cria a pesquisa do chamado encerrado e dispara o envio ao Teams.
-     * Se ja existir (chamado encerrado de novo por engano), so devolve a que existe,
-     * sem reenviar ao Teams.
+     * Cria a pesquisa do chamado encerrado e agenda o e-mail para
+     * app.email.atraso-minutos depois - quem realmente envia e o
+     * {@link EnvioPesquisaScheduler}. Se ja existir (chamado encerrado de novo
+     * por engano), so devolve a que existe, sem reagendar.
      */
     @Transactional
     public Avaliacao gerarParaChamado(Chamado chamado) {
         return avaliacaoRepository.findByChamado(chamado).orElseGet(() -> {
+            OffsetDateTime agora = OffsetDateTime.now();
+
             Avaliacao avaliacao = new Avaliacao();
             avaliacao.setChamado(chamado);
             avaliacao.setToken(UUID.randomUUID().toString());
-            avaliacao.setCriadaEm(OffsetDateTime.now());
+            avaliacao.setCriadaEm(agora);
+            avaliacao.setEnviarEm(agora.plusMinutes(atrasoEnvioMinutos));
 
             Avaliacao salva = avaliacaoRepository.save(avaliacao);
-            log.info("Pesquisa de satisfacao gerada para o chamado {}: {}",
-                    chamado.getId(), montarLink(salva.getToken()));
+            log.info("Pesquisa de satisfacao gerada para o chamado {}: {} (e-mail agendado para {})",
+                    chamado.getId(), montarLink(salva.getToken()), salva.getEnviarEm());
 
-            teamsNotificacaoService.enviarPesquisa(salva);
             return salva;
         });
     }

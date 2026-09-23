@@ -44,8 +44,20 @@ public class Avaliacao {
     @Column(name = "respondida_em")
     private OffsetDateTime respondidaEm;
 
+    /** Momento em que o e-mail da pesquisa deve ser disparado (encerramento + atraso configurado). */
+    @Column(name = "enviar_em", nullable = false)
+    private OffsetDateTime enviarEm = OffsetDateTime.now();
+
+    /** Fica nulo ate o job de envio disparar o e-mail; usado para nao reenviar. */
+    @Column(name = "email_enviado_em")
+    private OffsetDateTime emailEnviadoEm;
+
     public boolean isRespondida() {
         return respondidaEm != null;
+    }
+
+    public boolean isEmailEnviado() {
+        return emailEnviadoEm != null;
     }
 
     public Long getId() {
@@ -102,5 +114,21 @@ public class Avaliacao {
 
     public void setRespondidaEm(OffsetDateTime respondidaEm) {
         this.respondidaEm = respondidaEm;
+    }
+
+    public OffsetDateTime getEnviarEm() {
+        return enviarEm;
+    }
+
+    public void setEnviarEm(OffsetDateTime enviarEm) {
+        this.enviarEm = enviarEm;
+    }
+
+    public OffsetDateTime getEmailEnviadoEm() {
+        return emailEnviadoEm;
+    }
+
+    public void setEmailEnviadoEm(OffsetDateTime emailEnviadoEm) {
+        this.emailEnviadoEm = emailEnviadoEm;
     }
 }

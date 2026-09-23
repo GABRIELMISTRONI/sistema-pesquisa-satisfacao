@@ -21,8 +21,26 @@ spring:
       hibernate:
         default_schema: pesquisa_satisfacao
 
+  # SMTP do Resend (https://resend.com/docs/send-with-smtp): host e usuario ja
+  # vem com o valor padrao do proprio Resend, so falta a senha (a API key,
+  # criada no dashboard em Resend > API Keys) e o remetente verificado.
+  # Porta 465 = SSL implicito (nao e STARTTLS, por isso ssl.enable em vez de starttls).
+  mail:
+    host: ${SMTP_HOST:smtp.resend.com}
+    port: ${SMTP_PORT:465}
+    username: ${SMTP_USUARIO:resend}
+    password: ${SMTP_SENHA:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+
 server:
-  port: 8080
+  # Render injeta a variavel PORT com a porta que o servico deve escutar;
+  # localmente cai no 8080 de sempre.
+  port: ${PORT:8080}
 
 app:
   jwt:
@@ -37,7 +55,20 @@ app:
   teams:
     # URL do webhook do Teams (Conector "Incoming Webhook" ou app "Workflows").
     # Sem essa variavel, o envio ao Teams e apenas pulado (log de aviso).
+    # Nao usado mais no fluxo de encerramento (substituido pelo e-mail via Resend
+    # abaixo); mantido caso queiram reativar.
     webhook-url: ${TEAMS_WEBHOOK_URL:}
+  email:
+    # Sem dominio proprio verificado no Resend (dashboard > Domains), o unico
+    # remetente valido e onboarding@resend.dev (dominio de teste do proprio
+    # Resend) — e so entrega para o e-mail dono da conta/API key. Quando
+    # verificarem um dominio, trocar via EMAIL_REMETENTE (aceita so o
+    # endereco ou "Nome <email@dominio>").
+    remetente: ${EMAIL_REMETENTE:CIT <onboarding@resend.dev>}
+    assunto: ${EMAIL_ASSUNTO:Pesquisa de satisfação - CIT}
+    # Quanto tempo apos o encerramento do chamado o e-mail e enviado ao cliente.
+    # Configurado pelo atendente da conta de atendimento; exige reiniciar o backend.
+    atraso-minutos: ${EMAIL_ATRASO_MINUTOS:0}
   anexos:
     tamanho-maximo-bytes: 5242880 # 5 MB
 

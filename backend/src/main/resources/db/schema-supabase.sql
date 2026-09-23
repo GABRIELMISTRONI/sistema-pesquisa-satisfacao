@@ -37,16 +37,27 @@ create index if not exists idx_chamados_solicitante on pesquisa_satisfacao.chama
 create index if not exists idx_chamados_status on pesquisa_satisfacao.chamados (status);
 
 create table if not exists pesquisa_satisfacao.avaliacoes (
-    id            bigserial primary key,
-    chamado_id    bigint       not null unique references pesquisa_satisfacao.chamados (id),
-    token         varchar(60)  not null unique,
-    nota          integer      check (nota between 1 and 10),
-    comentario    varchar(1000),
-    criada_em     timestamptz  not null default now(),
-    respondida_em timestamptz
+    id               bigserial primary key,
+    chamado_id       bigint       not null unique references pesquisa_satisfacao.chamados (id),
+    token            varchar(60)  not null unique,
+    nota             integer      check (nota between 1 and 10),
+    comentario       varchar(1000),
+    criada_em        timestamptz  not null default now(),
+    respondida_em    timestamptz,
+    -- Momento em que o e-mail da pesquisa deve sair (encerramento + atraso
+    -- configurado em app.email.atraso-minutos) e quando de fato saiu.
+    enviar_em        timestamptz  not null default now(),
+    email_enviado_em timestamptz
 );
 
 create index if not exists idx_avaliacoes_token on pesquisa_satisfacao.avaliacoes (token);
+create index if not exists idx_avaliacoes_pendentes_envio on pesquisa_satisfacao.avaliacoes (enviar_em)
+    where email_enviado_em is null;
+
+-- Rodar isto se a tabela avaliacoes ja existia antes desta mudanca (adiciona
+-- as colunas sem apagar dados; se a tabela acabou de ser criada acima, e um no-op).
+alter table pesquisa_satisfacao.avaliacoes add column if not exists enviar_em timestamptz not null default now();
+alter table pesquisa_satisfacao.avaliacoes add column if not exists email_enviado_em timestamptz;
 
 create table if not exists pesquisa_satisfacao.mensagens (
     id         bigserial primary key,
