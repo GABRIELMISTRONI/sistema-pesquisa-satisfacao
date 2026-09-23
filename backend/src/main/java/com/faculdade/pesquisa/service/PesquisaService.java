@@ -37,25 +37,29 @@ public class PesquisaService {
 
     private final AvaliacaoRepository avaliacaoRepository;
     private final ChamadoRepository chamadoRepository;
+    private final EmailNotificacaoService emailNotificacaoService;
     private final String urlBaseFrontend;
     private final long atrasoEnvioMinutos;
 
     public PesquisaService(
             AvaliacaoRepository avaliacaoRepository,
             ChamadoRepository chamadoRepository,
+            EmailNotificacaoService emailNotificacaoService,
             @Value("${app.frontend.url}") String urlBaseFrontend,
             @Value("${app.email.atraso-minutos}") long atrasoEnvioMinutos) {
         this.avaliacaoRepository = avaliacaoRepository;
         this.chamadoRepository = chamadoRepository;
+        this.emailNotificacaoService = emailNotificacaoService;
         this.urlBaseFrontend = urlBaseFrontend;
         this.atrasoEnvioMinutos = atrasoEnvioMinutos;
     }
 
     /**
-     * Cria a pesquisa do chamado encerrado e agenda o e-mail para
-     * app.email.atraso-minutos depois - quem realmente envia e o
-     * {@link EnvioPesquisaScheduler}. Se ja existir (chamado encerrado de novo
-     * por engano), so devolve a que existe, sem reagendar.
+     * Cria a pesquisa do chamado encerrado. Com app.email.atraso-minutos <= 0
+     * o e-mail sai na hora, sincrono; com atraso configurado, so agenda
+     * (enviarEm) e quem manda de fato e o {@link EnvioPesquisaScheduler}.
+     * Se ja existir (chamado encerrado de novo por engano), so devolve a que
+     * existe, sem reenviar.
      */
     @Transactional
     public Avaliacao gerarParaChamado(Chamado chamado) {
@@ -69,8 +73,15 @@ public class PesquisaService {
             avaliacao.setEnviarEm(agora.plusMinutes(atrasoEnvioMinutos));
 
             Avaliacao salva = avaliacaoRepository.save(avaliacao);
-            log.info("Pesquisa de satisfacao gerada para o chamado {}: {} (e-mail agendado para {})",
-                    chamado.getId(), montarLink(salva.getToken()), salva.getEnviarEm());
+
+            if (atrasoEnvioMinutos <= 0 && emailNotificacaoService.enviarPesquisa(salva)) {
+                salva.setEmailEnviadoEm(OffsetDateTime.now());
+                log.info("Pesquisa de satisfacao do chamado {} enviada por e-mail na hora: {}",
+                        chamado.getId(), montarLink(salva.getToken()));
+            } else {
+                log.info("Pesquisa de satisfacao gerada para o chamado {}: {} (e-mail agendado para {})",
+                        chamado.getId(), montarLink(salva.getToken()), salva.getEnviarEm());
+            }
 
             return salva;
         });
