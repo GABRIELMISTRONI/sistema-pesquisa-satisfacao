@@ -1,7 +1,10 @@
 // Camada central de comunicação com a API.
 // Toda chamada à API do sistema deve passar por aqui.
 
-const API_BASE_URL = 'http://localhost:8080';
+// Em producao (Vercel), configurar VITE_API_URL nas variaveis de ambiente do
+// projeto apontando para a URL do backend (ex: Render). Sem essa variavel,
+// cai no localhost de sempre para desenvolvimento.
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 function tratarSessaoExpirada(resposta, autenticado) {
   if (resposta.status === 401 && autenticado) {
