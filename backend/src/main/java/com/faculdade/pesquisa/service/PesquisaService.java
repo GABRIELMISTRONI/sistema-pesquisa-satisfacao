@@ -74,9 +74,12 @@ public class PesquisaService {
 
             Avaliacao salva = avaliacaoRepository.save(avaliacao);
 
-            if (atrasoEnvioMinutos <= 0 && emailNotificacaoService.enviarPesquisa(salva)) {
-                salva.setEmailEnviadoEm(OffsetDateTime.now());
-                log.info("Pesquisa de satisfacao do chamado {} enviada por e-mail na hora: {}",
+            if (atrasoEnvioMinutos <= 0) {
+                // Assincrono: o encerramento do chamado nao pode ficar esperando o
+                // handshake SMTP. O EnvioPesquisaScheduler serve de rede de seguranca
+                // caso essa chamada em segundo plano falhe silenciosamente.
+                emailNotificacaoService.enviarEmSegundoPlano(salva.getId());
+                log.info("Pesquisa de satisfacao do chamado {} disparada por e-mail em segundo plano: {}",
                         chamado.getId(), montarLink(salva.getToken()));
             } else {
                 log.info("Pesquisa de satisfacao gerada para o chamado {}: {} (e-mail agendado para {})",
