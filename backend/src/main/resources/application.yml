@@ -21,22 +21,6 @@ spring:
       hibernate:
         default_schema: pesquisa_satisfacao
 
-  # SMTP do Resend (https://resend.com/docs/send-with-smtp): host e usuario ja
-  # vem com o valor padrao do proprio Resend, so falta a senha (a API key,
-  # criada no dashboard em Resend > API Keys) e o remetente verificado.
-  # Porta 465 = SSL implicito (nao e STARTTLS, por isso ssl.enable em vez de starttls).
-  mail:
-    host: ${SMTP_HOST:smtp.resend.com}
-    port: ${SMTP_PORT:465}
-    username: ${SMTP_USUARIO:resend}
-    password: ${SMTP_SENHA:}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          ssl:
-            enable: true
-
 server:
   # Render injeta a variavel PORT com a porta que o servico deve escutar;
   # localmente cai no 8080 de sempre.
@@ -59,6 +43,10 @@ app:
     # abaixo); mantido caso queiram reativar.
     webhook-url: ${TEAMS_WEBHOOK_URL:}
   email:
+    # API key do Resend (dashboard > API Keys). Enviado pela API HTTP e nao por
+    # SMTP porque o plano gratuito do Render bloqueia as portas SMTP de saida.
+    # Aceita ainda SMTP_SENHA (nome antigo da variavel) para nao exigir mudanca no Render.
+    resend-api-key: ${RESEND_API_KEY:${SMTP_SENHA:}}
     # Sem dominio proprio verificado no Resend (dashboard > Domains), o unico
     # remetente valido e onboarding@resend.dev (dominio de teste do proprio
     # Resend) — e so entrega para o e-mail dono da conta/API key. Quando
